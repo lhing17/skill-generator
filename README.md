@@ -1,22 +1,14 @@
 # skill-generator
 
-A Clojure library designed to ... well, that part is up to you.
+war3地图，一键生成技能物编，并将图标和技能导入lni格式地图中。
 
 ## Usage
 
-FIXME
+1. 自动获取可用技能ID
+2. 根据json内容生成技能的lni格式内容。
+3. 根据json内容和图标的图片，生成blp格式图标
+4. 将blp格式图标注入到项目中，将lni格式内容注入到项目中。
 
 ## License
 
-Copyright © 2021 FIXME
-
-This program and the accompanying materials are made available under the
-terms of the Eclipse Public License 2.0 which is available at
-http://www.eclipse.org/legal/epl-2.0.
-
-This Source Code may also be made available under the following Secondary
-Licenses when the conditions for such availability set forth in the Eclipse
-Public License, v. 2.0 are satisfied: GNU General Public License as published by
-the Free Software Foundation, either version 2 of the License, or (at your
-option) any later version, with the GNU Classpath Exception which is available
-at https://www.gnu.org/software/classpath/license.html.
+Apache 2.0
