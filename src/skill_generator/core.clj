@@ -10,19 +10,17 @@
            (java.io File)
            (org.apache.commons.io FileUtils)))
 
-(def opts {:filter-type :default})
-(def base-out-dir "F:/War3Map/generate_icons")
-(def project-dir "E:/IdeaProjects/JZJH/jzjh")
-(def command-dir (str base-out-dir "/ReplaceableTextures/CommandButtons"))
-(def command-disabled-dir (str base-out-dir "/ReplaceableTextures/CommandButtonsDisabled"))
 
-(defn load-config [path]
-  (json/read-str (slurp path) :key-fn keyword)
+(defn- command-dir [base-out-dir] (str base-out-dir "/ReplaceableTextures/CommandButtons"))
+(defn- command-disabled-dir [base-out-dir] (str base-out-dir "/ReplaceableTextures/CommandButtonsDisabled"))
+
+(defn load-config [config-path]
+  (json/read-str (slurp config-path) :key-fn keyword)
   )
 
-(defn get-all-current-ids [path]
+(defn- get-all-current-ids [project-dir]
   (let [ability-path "table/ability.ini"]
-    (with-open [rdr (jio/reader (str path "/" ability-path))]
+    (with-open [rdr (jio/reader (str project-dir "/" ability-path))]
       (doall (map #(str/replace % #"\[|\]" "")
                   (filter
                     #(and (str/starts-with? % "[") (str/ends-with? % "]"))
@@ -30,7 +28,7 @@
       ))
   )
 
-(defn next-char [c]
+(defn- next-char [c]
   "计算下一个字符：\\9的下一个字符为\\A，\\Z的下一个字符为\\0"
   (let [i (int c)]
     (cond (and (>= i 48) (<= i 56)) (char (inc i))
@@ -41,7 +39,8 @@
     )
   )
 
-(defn inc-by-index [s index]
+(defn- inc-by-index [s index]
+  "对下标为index的字符取next-char"
   (apply str (concat (take index s)
                      (cons (next-char (nth s index))
                            (nthrest s (inc index))
@@ -63,6 +62,7 @@
   )
 
 (defn get-available-ids [n current-ids]
+  "获取n个可用ID"
   (loop [ids [], count n, id "A000"]
     (cond (= count 0) ids
           (available? id current-ids) (recur (conj ids id) (dec count) (next-id id))
@@ -71,12 +71,13 @@
     )
   )
 
-(defn add-id-for-abilities [ids abilities]
+(defn- add-id-for-abilities [ids abilities]
+  "将ID添加到技能的配置中"
   (map #(assoc %2 :id %) ids abilities)
   )
 
 
-(defn get-abilities []
+(defn get-abilities [project-dir base-out-dir]
   (let [current-ids (get-all-current-ids project-dir)
         abilities (load-config (str base-out-dir "/config.json"))
         count (count abilities)
@@ -84,66 +85,52 @@
     (add-id-for-abilities available-ids abilities))
   )
 
-
-
-
-
-
-(defn- output-blp [image name adjust-image type dir prefix]
-  (let [border (img/add-border (adjust-image image) type opts)]
-    (img/output-as-blp border dir (pinyin/get-pinyin-name name) prefix)
-    image
+(defn- output-blp [adjust-image type dir-fn prefix]
+  (fn [image name base-out-dir opts]
+    (let [border (img/add-border (adjust-image image) type opts)]
+      (img/output-as-blp border (dir-fn base-out-dir) (pinyin/get-pinyin-name name) prefix)
+      image
+      )
     )
   )
 
-(defn- output-active-blp [image name]
-  (output-blp image name identity :active command-dir "BTN")
-  )
-
-(defn- output-active-dark-blp [image name]
-  (output-blp image name #(img/adjust-brightness % -50) :passive command-disabled-dir "DISBTN")
-  )
-
-(defn- output-passive-blp [image name]
-  (output-blp image name identity :passive command-dir "PASBTN"))
-
-(defn- output-passive-dark-blp [image name]
-  (output-blp image name #(img/adjust-brightness % -64) :passive command-disabled-dir "DISPASBTN"))
-
 (defn- output-blp-fn [type]
   (case type
-    :active output-active-blp
-    :active-dark output-active-dark-blp
-    :passive output-passive-blp
-    :passive-dark output-passive-dark-blp)
+    :active (output-blp identity :active command-dir "BTN")
+    :active-dark (output-blp #(img/adjust-brightness % -50) :passive command-disabled-dir "DISBTN")
+    :passive (output-blp identity :passive command-dir "PASBTN")
+    :passive-dark (output-blp #(img/adjust-brightness % -64) :passive command-disabled-dir "DISPASBTN"))
   )
 
-(defn convert-to-blp! [^File file type]
+(defn convert-to-blp! [^File file type base-out-dir opts]
   (-> file
       (ImageIO/read)
       (img/resize-to-64)
-      ((output-blp-fn (keyword type)) (.getName file))
-      ((output-blp-fn (keyword (str type "-dark"))) (.getName file))
+      ((output-blp-fn (keyword type)) (.getName file) base-out-dir opts)
+      ((output-blp-fn (keyword (str type "-dark"))) (.getName file) base-out-dir opts)
       )
   )
 
-(defn get-png-files [path abilities type]
-  (map (comp #(File. ^String %) #(str path "/" % ".png") :name)
+(defn get-png-files [base-out-dir abilities type]
+  (map (comp #(File. ^String %) #(str base-out-dir "/" % ".png") :name)
        (filter #(= type (:type %)) abilities))
   )
 
-(defn generate-icons [path abilities]
-  (doseq [type ["active" "passive"] f (get-png-files path abilities type)]
-    (convert-to-blp! f type))
+(defn generate-icons [base-out-dir abilities opts]
+  (doseq [type ["active" "passive"] f (get-png-files base-out-dir abilities type)]
+    (convert-to-blp! f type base-out-dir opts))
   )
 
 (defn -main [& args]
-  (let [abilities (get-abilities)
+  (let [base-out-dir "F:/git_repos/skill-generator/examples"
+        project-dir "F:/git_repos/JZJH/jzjh"
+        abilities (get-abilities project-dir base-out-dir)
         passive (tpl/render abilities "passive")
         active (tpl/render abilities "active")
         path (str project-dir "/table/ability.ini")
+        opts {:filter-type :default}
         ]
-    (generate-icons base-out-dir abilities)
+    (generate-icons base-out-dir abilities opts)
     (FileUtils/copyDirectoryToDirectory
       (File. (str base-out-dir "/ReplaceableTextures"))
       (File. (str project-dir "/resource")))

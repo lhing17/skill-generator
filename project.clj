@@ -11,4 +11,6 @@
                  [selmer "1.12.40"]
                  [commons-io "2.6"]
                  ]
-  :repl-options {:init-ns skill-generator.core})
+  :repl-options {:init-ns skill-generator.core}
+  :repositories [["jitpack" "https://jitpack.io"]]
+  )
