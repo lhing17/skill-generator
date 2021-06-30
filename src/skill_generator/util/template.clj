@@ -26,7 +26,10 @@
     )
   )
 
-(defn render [abilities type]
+(defn render [file data]
+  (par/render-file file data))
+
+(defn render-abilities [abilities type]
   (let [data (convert-to-data abilities type) file (if (= type "passive") "passive.ini" "active.ini") ]
     (str/join "\n" (map #(par/render-file file %) data))
     )
