@@ -10,6 +10,9 @@
                  [com.github.PhoenixZeng/BLP_IIO_Plugins "f3cfe38a66"]
                  [selmer "1.12.40"]
                  [commons-io "2.6"]
+                 ;; https://mvnrepository.com/artifact/seesaw/seesaw
+                 [seesaw/seesaw "1.5.0"]
+                 [com.formdev/flatlaf "1.2"]
                  ]
   :repl-options {:init-ns skill-generator.core}
   :repositories [["jitpack" "https://jitpack.io"]]

@@ -20,7 +20,7 @@
 
 (defn get-all-current-ids [project-dir type]
   "获取某类型当前所有的ID"
-  (let [ability-path (str "table/" type ".ini")]
+  (let [ability-path (str "table/" (if (= type "hero") "unit" type) ".ini")]
     (with-open [rdr (jio/reader (str project-dir "/" ability-path))]
       (doall (map #(str/replace % #"\[|\]" "")
                   (filter
@@ -61,7 +61,7 @@
   )
 
 (defn- available? [id current-ids]
-  (not-any? #(= id %) current-ids)
+  (not-any? #(= (str/lower-case id) (str/lower-case %)) current-ids)
   )
 
 (defn get-available-ids [n current-ids type]
@@ -70,6 +70,7 @@
         (cond (= type "ability") "A000"
               (= type "item") "I000"
               (= type "unit") "e000"
+              (= type "hero") "E000"
               (= type "buff") "B000"
               :else "A000")]
     (loop [ids [], count n, id start-id]
@@ -156,7 +157,7 @@
     )
   )
 
-(defn- ^String get-one-available-id [project-dir type]
+(defn ^String get-one-available-id [project-dir type]
   (first (get-available-ids 1 (get-all-current-ids project-dir type) type))
   )
 
@@ -254,15 +255,15 @@
                                                          })
   )
 
-(defn -main [& args]
-  (let [project-dir "E:/IdeaProjects/JZJH/jzjh"
-        base-out-dir "F:/War3Map/generate_icons"
-        unit-ini (str project-dir "/table/unit.ini")
-        ;unit-content (render-dummy-unit project-dir {:name "风沙莽莽马甲" :ability_id "A0D3" :model "war3mapImported\\\\sandbreathdamage.mdl"})
-        ]
-    (generate-exclusive project-dir base-out-dir)
-    ;(append-to-file unit-ini unit-content)
-    ;(println (get-one-available-id project-dir "ability"))
-    )
-
-  )
+;(defn -main [& args]
+;  (let [project-dir "E:/IdeaProjects/JZJH/jzjh"
+;        base-out-dir "F:/War3Map/generate_icons"
+;        unit-ini (str project-dir "/table/unit.ini")
+;        ;unit-content (render-dummy-unit project-dir {:name "风沙莽莽马甲" :ability_id "A0D3" :model "war3mapImported\\\\sandbreathdamage.mdl"})
+;        ]
+;    ;(generate-exclusive project-dir base-out-dir)
+;    ;(append-to-file unit-ini unit-content)
+;    (println (get-one-available-id project-dir "unit"))
+;    )
+;
+;  )
